@@ -15,7 +15,7 @@ export default function MainLayout() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
-      <div className="flex min-h-screen gap-6 p-4 lg:p-6">
+      <div className="flex min-h-screen w-full gap-3 p-2 sm:gap-4 sm:p-4 lg:gap-6 lg:p-6">
         <Sidebar mobileOpen={mobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} />
 
         <motion.div
@@ -30,15 +30,22 @@ export default function MainLayout() {
           </div>
         </motion.div>
 
-        <div className="flex flex-1 flex-col overflow-hidden lg:hidden">
-          <button
-            onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-            className="mb-4 rounded-2xl bg-white/80 px-4 py-2 text-sm font-semibold text-slate-900 shadow-soft transition hover:bg-white dark:bg-slate-950/90 dark:text-white dark:hover:bg-slate-900"
-          >
-            Menu
-          </button>
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden lg:hidden">
+          <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
+            <button
+              type="button"
+              onClick={() => setMobileSidebarOpen((prev) => !prev)}
+              className="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 shadow-soft transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950/90 dark:text-white dark:hover:bg-slate-900"
+              aria-label="Open navigation menu"
+            >
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+              <span>Menu</span>
+            </button>
+          </div>
           <Header />
-          <div className="mt-4 flex-1 overflow-y-auto">
+          <div className="mt-3 flex-1 overflow-y-auto sm:mt-4">
             <Outlet />
           </div>
         </div>

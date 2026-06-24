@@ -44,15 +44,15 @@ export default function PromptsPage() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-6 sm:pb-0">
       <Card>
         <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Prompt library</p>
-        <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Manage prompts</h2>
+        <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 sm:text-3xl">Manage prompts</h2>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Browse, bookmark, and reuse productivity templates across categories.
         </p>
 
-        <div className="mt-4">
+        <div className="mt-4 overflow-x-auto pb-1">
           <CategoryFilter active={filter} onChange={handleFilterChange} />
         </div>
       </Card>
@@ -68,7 +68,7 @@ export default function PromptsPage() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((prompt) => (
             <PromptCard
               key={prompt.id}

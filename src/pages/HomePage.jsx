@@ -152,22 +152,22 @@ export default function HomePage() {
   };
 
   return (
-    <div className="w-full px-4 py-10 text-slate-950 dark:text-white">
-      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-10">
+    <div className="w-full py-4 text-slate-950 dark:text-white sm:px-4 sm:py-10">
+      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 sm:gap-10">
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: 'easeOut' }}
-          className="rounded-3xl border border-white/70 bg-white/80 p-10 shadow-lg shadow-slate-200/5 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80 dark:shadow-slate-950/5"
+          className="rounded-2xl border border-white/70 bg-white/80 p-4 shadow-lg shadow-slate-200/5 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80 dark:shadow-slate-950/5 sm:rounded-3xl sm:p-10"
         >
           <div className="text-center">
             <p className="text-xs uppercase tracking-[0.4em] text-accent-500 dark:text-accent-400">Celume AI</p>
-            <h1 className="mt-4 text-4xl font-semibold text-slate-950 dark:text-white">
+            <h1 className="mt-4 text-3xl font-semibold text-slate-950 dark:text-white sm:text-4xl">
               Good afternoon, Mohan
             </h1>
           </div>
 
-          <div className="mt-10 rounded-3xl bg-white/70 p-6 backdrop-blur-lg dark:bg-slate-900/70">
+          <div className="mt-6 rounded-2xl bg-white/70 p-4 backdrop-blur-lg dark:bg-slate-900/70 sm:mt-10 sm:rounded-3xl sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-slate-600 dark:text-slate-300">How can I help you today?</p>
               <span className="hidden sm:inline rounded-full bg-white/5 dark:bg-white/[0.02] backdrop-blur-lg px-4 py-2 text-xs uppercase tracking-[0.24em] text-slate-700 dark:text-slate-100">
@@ -175,7 +175,7 @@ export default function HomePage() {
               </span>
             </div>
 
-            <div className="mt-6 flex items-center gap-3 rounded-full bg-white px-4 py-3 shadow-soft backdrop-blur-lg dark:bg-slate-950">
+            <div className="mt-6 flex flex-col gap-3 rounded-2xl bg-white px-4 py-3 shadow-soft backdrop-blur-lg dark:bg-slate-950 sm:flex-row sm:items-center sm:rounded-full">
               <button
                 type="button"
                 onClick={() => {
@@ -183,7 +183,7 @@ export default function HomePage() {
                   setPromptText('');
                 }}
                 title="Clear input"
-                className="h-12 w-12 rounded-full bg-accent-500 text-lg font-bold text-white transition hover:bg-accent-600"
+                className="h-12 w-12 shrink-0 rounded-full bg-accent-500 text-lg font-bold text-white transition hover:bg-accent-600"
               >
                 +
               </button>
@@ -193,13 +193,13 @@ export default function HomePage() {
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) handleSend(); }}
                 placeholder="Ask anything…"
                 aria-label="Message input"
-                className="flex-1 bg-transparent text-base text-slate-950 dark:text-white outline-none placeholder:text-slate-500 dark:placeholder:text-slate-400"
+                className="min-w-0 flex-1 bg-transparent text-base text-slate-950 outline-none placeholder:text-slate-500 dark:text-white dark:placeholder:text-slate-400"
               />
               <button
                 type="button"
                 onClick={toggleListen}
                 aria-label={isListening ? 'Stop recording' : 'Start voice input'}
-                className={`ml-2 h-12 rounded-full px-6 text-sm font-semibold text-white transition ${
+                className={`h-12 w-full rounded-full px-6 text-sm font-semibold text-white transition sm:ml-2 sm:w-auto ${
                   isListening
                     ? 'bg-red-500 hover:bg-red-600 animate-pulse'
                     : 'bg-accent-500 hover:bg-accent-600'
@@ -223,7 +223,7 @@ export default function HomePage() {
               whileHover={{ y: -4 }}
               whileTap={{ scale: 0.98 }}
               transition={{ duration: 0.24, delay: index * 0.05 }}
-              className="cursor-pointer rounded-2xl border border-white/70 bg-white/70 p-6 text-left shadow-soft backdrop-blur-lg transition hover:bg-white dark:border-slate-800 dark:bg-slate-950/70 dark:hover:bg-slate-900"
+              className="cursor-pointer rounded-2xl border border-white/70 bg-white/70 p-4 text-left shadow-soft backdrop-blur-lg transition hover:bg-white dark:border-slate-800 dark:bg-slate-950/70 dark:hover:bg-slate-900 sm:p-6"
             >
               <p className="text-sm font-semibold text-slate-950 dark:text-white">{suggestion.title}</p>
               <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{suggestion.text}</p>

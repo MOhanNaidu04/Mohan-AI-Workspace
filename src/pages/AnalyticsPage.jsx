@@ -9,11 +9,11 @@ export default function AnalyticsPage() {
   const { analytics } = useApp();
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-6 sm:pb-0">
       <Card>
-        <div className="mb-6">
+        <div className="mb-5 sm:mb-6">
           <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Dashboard</p>
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Analytics</h2>
+          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 sm:text-3xl">Analytics</h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Track chat volume, category usage, and prompt frequency across your workspace.
           </p>
@@ -30,14 +30,14 @@ export default function AnalyticsPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <h3 className="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Category usage</h3>
-          <div className="h-64">
+          <div className="h-56 sm:h-64">
             <CategoryChart data={analytics.categoryUsage} />
           </div>
         </Card>
 
         <Card>
           <h3 className="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Weekly activity</h3>
-          <div className="h-64">
+          <div className="h-56 sm:h-64">
             <WeeklyChart data={analytics.weeklyActivity} />
           </div>
         </Card>
@@ -45,7 +45,7 @@ export default function AnalyticsPage() {
 
       <Card>
         <h3 className="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Prompt frequency</h3>
-        <div className="h-64">
+        <div className="h-56 sm:h-64">
           <PromptFrequencyChart data={analytics.promptFrequency} />
         </div>
       </Card>

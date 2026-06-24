@@ -130,7 +130,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
 
   return (
     <>
-      <aside className="hidden w-80 shrink-0 flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft backdrop-blur-xl dark:border-slate-700 dark:bg-slate-950 lg:flex">
+      <aside className="hidden w-72 shrink-0 flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/80 p-4 shadow-soft backdrop-blur-xl dark:border-slate-700 dark:bg-slate-950 lg:flex xl:w-80 xl:p-6">
         {sidebarContent}
       </aside>
 
@@ -148,7 +148,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 26, stiffness: 240 }}
-              className="absolute left-0 top-0 flex h-full w-[88%] max-w-sm flex-col overflow-y-auto bg-white p-6 shadow-2xl dark:bg-slate-950"
+              className="absolute left-0 top-0 flex h-full w-[88%] max-w-sm flex-col overflow-y-auto bg-white p-4 shadow-2xl dark:bg-slate-950 sm:p-6"
             >
               <div className="mb-4 flex justify-end">
                 <button onClick={onClose} className="rounded-xl px-3 py-2 text-sm text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-900">

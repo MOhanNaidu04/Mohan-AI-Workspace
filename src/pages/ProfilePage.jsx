@@ -213,7 +213,7 @@ export default function ProfilePage() {
     }`;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-6 sm:pb-0">
       {/* ── Profile Card ────────────────────────────────────────────────────── */}
       <Card>
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
@@ -222,7 +222,7 @@ export default function ProfilePage() {
           </div>
           <div className="flex-1">
             <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Account</p>
-            <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Profile</h2>
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 sm:text-3xl">Profile</h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Manage the registered user profile saved in your database.
             </p>
@@ -282,7 +282,7 @@ export default function ProfilePage() {
           </label>
         </div>
 
-        <Button onClick={handleSave} disabled={saving || loadingProfile} className="mt-6">
+        <Button onClick={handleSave} disabled={saving || loadingProfile} className="mt-6 w-full sm:w-auto">
           {saving ? 'Saving…' : 'Save profile'}
         </Button>
       </Card>
@@ -318,7 +318,7 @@ export default function ProfilePage() {
           <div className="flex gap-3 pt-2">
             <Button
               onClick={handleLogout}
-              className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700"
+              className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 sm:w-auto"
             >
               Logout
             </Button>
