@@ -70,8 +70,10 @@ export default function LoginPage() {
 
       if (!response.ok) {
         const serverMessage = data.error?.startsWith('<!DOCTYPE html>')
-          ? 'Login route was not found on the backend. Make sure the backend is running and VITE_API_BASE_URL is correct.'
-          : data.error || 'Login failed. Please check your credentials and try again.';
+          ? 'The login request reached the frontend instead of the backend. Start the app with `npm run start` or run both servers with `npm run dev:all`.'
+          : response.status === 405
+            ? 'The backend received the request but does not accept that method on this route. Check that the backend process is the updated one.'
+            : data.error || 'Login failed. Please check your credentials and try again.';
         console.warn('[LoginPage] Login rejected by server:', serverMessage);
         setError(serverMessage);
         return;
