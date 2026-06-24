@@ -1,14 +1,25 @@
 import express from 'express';
 import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { query, connect, closePool } from './db/db.js';
 import { authMiddleware } from './db/auth.js';
 import { registerUser, loginUser, getCurrentUser, updateUser } from './db/authRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const distDir = path.resolve(__dirname, 'dist');
+const hasClientBuild = fs.existsSync(path.join(distDir, 'index.html'));
 
 app.use(cors());
 app.use(express.json());
+
+if (hasClientBuild) {
+  app.use(express.static(distDir));
+}
 
 // ── Request logging middleware ─────────────────────────────────────────────
 app.use((req, _res, next) => {
@@ -234,11 +245,14 @@ app.get('/api/tasks', authMiddleware, async (req, res) => {
 
 // ── 404 catch-all ──────────────────────────────────────────────────────────
 app.use((req, res) => {
+  if (hasClientBuild && req.method === 'GET' && !req.path.startsWith('/api/') && req.accepts('html')) {
+    return res.sendFile(path.join(distDir, 'index.html'));
+  }
+
   console.warn('[Server] 404 — Route not found: %s %s', req.method, req.path);
   res.status(404).json({ error: `Route ${req.method} ${req.path} not found.` });
 });
 
-// ── Global error handler ───────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {
   console.error('[Server] Unhandled error:', err);
   res.status(500).json({ error: 'An unexpected server error occurred. Please try again later.' });

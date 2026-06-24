@@ -8,6 +8,7 @@
     "dev:host": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview",
+    "start": "npm run build && node server.js",
     "backend": "node server.js",
     "dev:all": "concurrently \"npm run backend\" \"vite\"",
     "dev:all:host": "concurrently \"npm run backend\" \"vite --host 0.0.0.0\"",
