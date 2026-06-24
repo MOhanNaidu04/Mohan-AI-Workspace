@@ -267,13 +267,26 @@ async function startServer() {
       console.warn('[Server] Warning: Database not available — running in demo mode without persistence.');
     }
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`[Server] Backend listening on http://localhost:${PORT}`);
       if (isConnected) {
         console.log('[Server] Database: celume_ai_workspace — connected ✓');
       } else {
         console.log('[Server] Database: not connected — running in demo mode.');
       }
+    });
+
+    server.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        console.error(`[Server] Port ${PORT} is already in use.`);
+        console.error('[Server] Another backend process is likely already running on this port.');
+        console.error('[Server] Reuse the existing server, or stop the current process before starting a new one.');
+        process.exitCode = 0;
+        return;
+      }
+
+      console.error('[Server] Failed to start:', error.message);
+      process.exitCode = 1;
     });
   } catch (error) {
     console.error('[Server] Failed to start:', error.message);
