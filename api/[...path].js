@@ -31,6 +31,29 @@ function sendJson(res, statusCode, payload) {
   res.end(JSON.stringify(payload));
 }
 
+function summarizeBody(body) {
+  if (!body || typeof body !== 'object') return {};
+
+  return Object.fromEntries(
+    Object.entries(body).map(([key, value]) => [
+      key,
+      typeof value === 'string'
+        ? { type: 'string', length: value.length, present: value.length > 0 }
+        : { type: typeof value, present: value !== undefined && value !== null },
+    ])
+  );
+}
+
+function errorPayload(error, requestId) {
+  return {
+    error: 'An unexpected server error occurred. Please try again later.',
+    message: error?.message || 'Unknown server error',
+    code: error?.code,
+    detail: error?.detail,
+    requestId,
+  };
+}
+
 function methodNotAllowed(res, allowedMethods) {
   res.setHeader('Allow', allowedMethods.join(', '));
   sendJson(res, 405, {
@@ -94,6 +117,7 @@ function normalizeUserRow(user) {
 }
 
 export default async function handler(req, res) {
+  const requestId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   setCorsHeaders(res);
 
   if (req.method === 'OPTIONS') {
@@ -241,6 +265,11 @@ export default async function handler(req, res) {
 
       const body = await readBody(req);
       const { fullName, email, theme, accentColor, avatarUrl } = body;
+      console.info('[Vercel API] Profile update request', {
+        requestId,
+        userId: decoded.userId,
+        body: summarizeBody(body),
+      });
 
       if (email) {
         const existingUser = await query(
@@ -415,8 +444,16 @@ export default async function handler(req, res) {
 
     sendJson(res, 404, { error: `Route ${req.method} ${pathname} not found.` });
   } catch (error) {
-    console.error('[Vercel API] Error handling request:', error);
-    sendJson(res, 500, { error: 'An unexpected server error occurred. Please try again later.' });
+    console.error('[Vercel API] Error handling request:', {
+      requestId,
+      method: req.method,
+      pathname,
+      message: error?.message,
+      code: error?.code,
+      detail: error?.detail,
+      stack: error?.stack,
+    });
+    sendJson(res, 500, errorPayload(error, requestId));
   }
 }
 
