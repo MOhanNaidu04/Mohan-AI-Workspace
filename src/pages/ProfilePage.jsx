@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
@@ -32,6 +32,30 @@ function normalizeUser(user) {
   };
 }
 
+function toStoredUser(user) {
+  return {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    fullName: user.fullName || user.full_name || '',
+    role: user.role || '',
+    avatarUrl: user.avatarUrl || user.avatar_url || '',
+  };
+}
+
+async function readJsonResponse(response) {
+  const text = await response.text();
+  return text ? JSON.parse(text) : {};
+}
+
+function getRequestErrorMessage(error) {
+  if (error instanceof TypeError && error.message === 'Failed to fetch') {
+    return 'Cannot reach the backend API. Please make sure the backend server is running and refresh the page.';
+  }
+
+  return error.message || 'Something went wrong. Please try again.';
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
@@ -46,6 +70,7 @@ export default function ProfilePage() {
   const [deleting, setDeleting] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [fieldErrors, setFieldErrors] = useState({ name: '', email: '' });
+  const loadErrorNotifiedRef = useRef(false);
 
   // ── Load profile from API ──────────────────────────────────────────────────
 
@@ -67,7 +92,7 @@ export default function ProfilePage() {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        const data = await response.json();
+        const data = await readJsonResponse(response);
         console.log('[ProfilePage] Profile API response status:', response.status, '| ok:', response.ok);
 
         if (!response.ok) {
@@ -78,19 +103,17 @@ export default function ProfilePage() {
           const nextProfile = normalizeUser(data.user);
           console.log('[ProfilePage] Profile loaded successfully:', nextProfile);
           setProfile(nextProfile);
-          localStorage.setItem('user', JSON.stringify({
-            id: data.user.id,
-            username: data.user.username,
-            email: data.user.email,
-            fullName: data.user.full_name,
-            role: data.user.role,
-            avatarUrl: data.user.avatar_url,
-          }));
+          localStorage.setItem('user', JSON.stringify(toStoredUser(data.user)));
         }
       } catch (error) {
         if (!cancelled) {
-          console.error('[ProfilePage] Error loading profile:', error.message);
-          notify('Profile load failed', error.message, 'error');
+          const message = getRequestErrorMessage(error);
+          console.error('[ProfilePage] Error loading profile:', message);
+
+          if (!loadErrorNotifiedRef.current) {
+            loadErrorNotifiedRef.current = true;
+            notify('Profile load failed', message, 'error');
+          }
         }
       } finally {
         if (!cancelled) setLoadingProfile(false);
@@ -158,21 +181,14 @@ export default function ProfilePage() {
         }),
       });
 
-      const data = await response.json();
+      const data = await readJsonResponse(response);
       console.log('[ProfilePage] Save API response status:', response.status, '| ok:', response.ok);
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to update profile. Please try again.');
       }
 
-      const updatedUser = {
-        id: data.user.id,
-        username: data.user.username,
-        email: data.user.email,
-        fullName: data.user.full_name,
-        role: data.user.role,
-        avatarUrl: data.user.avatar_url,
-      };
+      const updatedUser = toStoredUser(data.user);
 
       console.log('[ProfilePage] Profile saved successfully:', updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -180,8 +196,9 @@ export default function ProfilePage() {
       setProfile(normalizeUser(updatedUser));
       notify('Profile saved', 'Your registered profile was updated in the database.');
     } catch (error) {
-      console.error('[ProfilePage] Error saving profile:', error.message);
-      notify('Profile save failed', error.message, 'error');
+      const message = getRequestErrorMessage(error);
+      console.error('[ProfilePage] Error saving profile:', message);
+      notify('Profile save failed', message, 'error');
     } finally {
       setSaving(false);
     }
@@ -252,7 +269,7 @@ export default function ProfilePage() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const data = await response.json();
+      const data = await readJsonResponse(response);
       console.log('[ProfilePage] Delete API response status:', response.status, '| ok:', response.ok);
 
       if (!response.ok) {
