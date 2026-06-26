@@ -1,9 +1,10 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useApp } from '../../context/AppContext';
 import SearchInput from '../common/SearchInput';
 import Button from '../common/Button';
+import { buildChatShareText, buildChatShareUrl, buildShareTargets } from '../../utils/shareChat';
 
 const slowSlide = {
   type: 'spring',
@@ -14,6 +15,7 @@ const slowSlide = {
 
 export default function Sidebar({ mobileOpen, onClose }) {
   const navigate = useNavigate();
+  const [openMenuId, setOpenMenuId] = useState('');
   const {
     chats,
     selectedChatId,
@@ -41,10 +43,37 @@ export default function Sidebar({ mobileOpen, onClose }) {
     onClose?.();
   };
 
-  const handleNewChat = () => {
-    createNewChat('business');
-    navigate('/chat');
+  const handleNewChat = async () => {
+    const chat = await createNewChat('business');
+    navigate(`/chat?chat=${encodeURIComponent(chat.id)}`);
     onClose?.();
+  };
+
+  const handleCopyLink = async (chat) => {
+    const url = buildChatShareUrl(chat.id);
+    await navigator.clipboard.writeText(url);
+    setOpenMenuId('');
+  };
+
+  const openShareTab = (url) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+    setOpenMenuId('');
+  };
+
+  const handleShare = (chat, type) => {
+    const url = buildChatShareUrl(chat.id);
+    const text = buildChatShareText(chat.title);
+    const targets = buildShareTargets(url, text);
+
+    if (type === 'x') return openShareTab(targets.x);
+    if (type === 'whatsapp') return openShareTab(targets.whatsapp);
+    if (type === 'linkedin') return openShareTab(targets.linkedin);
+
+    if (navigator.share) {
+      navigator.share({ title: chat.title, text, url }).catch(() => {});
+    } else {
+      openShareTab(targets.x);
+    }
   };
 
   const sidebarContent = (
@@ -68,7 +97,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
           + New chat
         </Button>
 
-        <div className="space-y-3 overflow-y-auto pr-1">
+        <div className="space-y-3 pr-1">
           <AnimatePresence initial={false}>
             {filteredChats.length === 0 ? (
               <motion.p
@@ -83,6 +112,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
             ) : (
               filteredChats.map((chat, index) => {
                 const isSelected = selectedChatId === chat.id;
+                const isMenuOpen = openMenuId === chat.id;
 
                 return (
                   <motion.div
@@ -114,20 +144,65 @@ export default function Sidebar({ mobileOpen, onClose }) {
                             {chat.lastMessage}
                           </p>
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => deleteChat(chat.id)}
-                          className="rounded-lg p-2 text-slate-400 opacity-0 transition hover:bg-rose-50 hover:text-rose-600 group-hover:opacity-100 dark:text-slate-300 dark:hover:bg-rose-950/40 dark:hover:text-rose-300"
-                          aria-label={`Delete ${chat.title}`}
-                        >
-                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6h18" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 6V4h8v2" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 6l1 15h10l1-15" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 11v6" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 11v6" />
-                          </svg>
-                        </button>
+                        <div className="relative shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setOpenMenuId((current) => (current === chat.id ? '' : chat.id))}
+                            className="rounded-lg p-2 text-slate-400 opacity-100 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                            aria-label={`More actions for ${chat.title}`}
+                          >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6h.01M12 12h.01M12 18h.01" />
+                            </svg>
+                          </button>
+
+                          <AnimatePresence>
+                            {isMenuOpen && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 6, scale: 0.98 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                                className="absolute right-0 top-10 z-20 w-44 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-950"
+                              >
+                                <button
+                                  type="button"
+                                  className="w-full rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                                  onClick={() => handleCopyLink(chat)}
+                                >
+                                  Copy link
+                                </button>
+                                <button
+                                  type="button"
+                                  className="w-full rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                                  onClick={() => handleShare(chat, 'x')}
+                                >
+                                  Share to X
+                                </button>
+                                <button
+                                  type="button"
+                                  className="w-full rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                                  onClick={() => handleShare(chat, 'whatsapp')}
+                                >
+                                  Share to WhatsApp
+                                </button>
+                                <button
+                                  type="button"
+                                  className="w-full rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                                  onClick={() => handleShare(chat, 'linkedin')}
+                                >
+                                  Share to LinkedIn
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => deleteChat(chat.id)}
+                                  className="mt-1 w-full rounded-xl px-3 py-2 text-left text-sm text-rose-600 transition hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-950/30"
+                                >
+                                  Delete chat
+                                </button>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
                       </div>
                     </div>
                   </motion.div>
@@ -142,7 +217,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
 
   return (
     <>
-      <aside className="hidden w-72 shrink-0 flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/80 p-4 shadow-soft backdrop-blur-xl dark:border-slate-700 dark:bg-slate-950 lg:flex xl:w-80 xl:p-6">
+      <aside className="hidden w-72 shrink-0 flex-col overflow-visible rounded-3xl border border-white/70 bg-white/80 p-4 shadow-soft backdrop-blur-xl dark:border-slate-700 dark:bg-slate-950 lg:flex xl:w-80 xl:p-6">
         {sidebarContent}
       </aside>
 

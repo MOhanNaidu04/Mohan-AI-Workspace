@@ -10,7 +10,7 @@ const AppContext = createContext(null);
 
 export function AppProvider({ children }) {
   const location = useLocation();
-  const [chats, setChats] = useState([]);
+  const [chats, setChats] = useLocalStorage('celume-chats', []);
   const [selectedChatId, setSelectedChatId] = useLocalStorage('celume-selected-chat', '');
   const [favorites, setFavorites] = useLocalStorage('celume-favorites', ['launch-copy']);
   const [promptUsage, setPromptUsage] = useLocalStorage('celume-prompt-usage', {});
@@ -18,7 +18,7 @@ export function AppProvider({ children }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [draftPrompt, setDraftPrompt] = useState('');
-  const [messagesByChat, setMessagesByChat] = useState({});
+  const [messagesByChat, setMessagesByChat] = useLocalStorage('celume-messages', {});
   const [hydratedFromServer, setHydratedFromServer] = useState(false);
 
   const selectedChat = useMemo(

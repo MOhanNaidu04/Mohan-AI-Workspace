@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import Button from '../common/Button';
 import MessageBubble from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
 import ChatInput from './ChatInput';
@@ -14,14 +13,6 @@ export default function ChatWindow({
   onSendMessage,
   onSelectTemplate,
   quickTemplates,
-  onExportText,
-  onExportJSON,
-  onNewChat,
-  onCopyLink,
-  onShare,
-  onShareX,
-  onShareWhatsApp,
-  onShareLinkedIn,
   onCopyPrompt,
 }) {
   const scrollRef = useRef(null);
@@ -48,32 +39,6 @@ export default function ChatWindow({
           <p className="mt-1 line-clamp-2 text-sm text-slate-600 dark:text-slate-400">
             {activeChat?.lastMessage || 'Start a conversation to see your latest prompt here.'}
           </p>
-        </div>
-        <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
-          <Button onClick={onNewChat} className="!rounded-xl !px-3 !py-2 text-xs sm:text-sm">
-            New chat
-          </Button>
-          <Button variant="secondary" onClick={onCopyLink} className="!rounded-xl !px-3 !py-2 text-xs sm:text-sm">
-            Copy link
-          </Button>
-          <Button variant="secondary" onClick={onShare} className="!rounded-xl !px-3 !py-2 text-xs sm:text-sm">
-            Share
-          </Button>
-          <Button variant="secondary" onClick={onShareX} className="!rounded-xl !px-3 !py-2 text-xs sm:text-sm">
-            X
-          </Button>
-          <Button variant="secondary" onClick={onShareWhatsApp} className="!rounded-xl !px-3 !py-2 text-xs sm:text-sm">
-            WhatsApp
-          </Button>
-          <Button variant="secondary" onClick={onShareLinkedIn} className="!rounded-xl !px-3 !py-2 text-xs sm:text-sm">
-            LinkedIn
-          </Button>
-          <Button variant="secondary" onClick={onExportText} className="!rounded-xl !px-3 !py-2 text-xs sm:text-sm">
-            Export TXT
-          </Button>
-          <Button variant="secondary" onClick={onExportJSON} className="!rounded-xl !px-3 !py-2 text-xs sm:text-sm">
-            JSON
-          </Button>
         </div>
       </div>
 

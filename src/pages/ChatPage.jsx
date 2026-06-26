@@ -86,17 +86,6 @@ export default function ChatPage() {
     notify('Link copied', 'Chat link copied to your clipboard.');
   };
 
-  const handleCopyPrompt = async (prompt) => {
-    const cleanPrompt = prompt?.trim();
-    if (!cleanPrompt) {
-      notify('Nothing to copy', 'Type a prompt before copying.', 'error');
-      return;
-    }
-
-    await navigator.clipboard.writeText(cleanPrompt);
-    notify('Prompt copied', 'Your draft prompt was copied to the clipboard.');
-  };
-
   const openShareUrl = (url, label) => {
     window.open(url, '_blank', 'noopener,noreferrer');
     notify('Share ready', `${label} share opened in a new tab.`);
@@ -163,7 +152,6 @@ export default function ChatPage() {
       onShareX={handleShareX}
       onShareWhatsApp={handleShareWhatsApp}
       onShareLinkedIn={handleShareLinkedIn}
-      onCopyPrompt={handleCopyPrompt}
     />
   );
 }
