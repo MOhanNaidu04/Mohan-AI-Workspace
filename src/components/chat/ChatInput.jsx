@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import Button from '../common/Button';
 
-export default function ChatInput({ value, onChange, onSend, loading, quickTemplates, onSelectTemplate }) {
+export default function ChatInput({ value, onChange, onSend, loading, quickTemplates, onSelectTemplate, onCopyPrompt }) {
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -32,6 +32,13 @@ export default function ChatInput({ value, onChange, onSend, loading, quickTempl
           className="h-fit w-full self-end px-6 py-4 sm:w-auto sm:self-auto"
         >
           {loading ? 'Sending...' : 'Send'}
+        </Button>
+      </div>
+
+      <div className="mt-2 flex items-center justify-between gap-3">
+        <p className="text-xs text-slate-500 dark:text-slate-400">Draft your prompt here, then copy or send it.</p>
+        <Button variant="secondary" onClick={() => onCopyPrompt?.(value)} disabled={!value.trim()} className="!rounded-xl !px-3 !py-2 text-xs">
+          Copy prompt
         </Button>
       </div>
 

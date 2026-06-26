@@ -4,6 +4,7 @@ import ChatWindow from '../components/chat/ChatWindow';
 import { promptTemplates } from '../data/prompts';
 import { downloadFile, exportChatAsJSON, exportChatAsText } from '../utils/exportChat';
 import { useNavigate } from 'react-router-dom';
+import { buildChatShareText, buildChatShareUrl, buildShareTargets } from '../utils/shareChat';
 
 export default function ChatPage() {
   const {
@@ -66,12 +67,82 @@ export default function ChatPage() {
     notify('Chat exported', 'JSON export downloaded successfully.');
   };
 
-  const handleNewChat = () => {
+  const handleNewChat = async () => {
     console.log('[ChatPage] Creating new chat in category "business".');
-    createNewChat('business');
+    const chat = await createNewChat('business');
     setDraftPrompt('');
-    navigate('/chat');
+    navigate(`/chat?chat=${encodeURIComponent(chat.id)}`);
     notify('New chat created', 'Start typing to begin a fresh conversation.');
+  };
+
+  const handleCopyLink = async () => {
+    if (!selectedChat?.id) {
+      notify('No chat selected', 'Open a chat before copying its link.', 'error');
+      return;
+    }
+
+    const shareUrl = buildChatShareUrl(selectedChat.id);
+    await navigator.clipboard.writeText(shareUrl);
+    notify('Link copied', 'Chat link copied to your clipboard.');
+  };
+
+  const handleCopyPrompt = async (prompt) => {
+    const cleanPrompt = prompt?.trim();
+    if (!cleanPrompt) {
+      notify('Nothing to copy', 'Type a prompt before copying.', 'error');
+      return;
+    }
+
+    await navigator.clipboard.writeText(cleanPrompt);
+    notify('Prompt copied', 'Your draft prompt was copied to the clipboard.');
+  };
+
+  const openShareUrl = (url, label) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+    notify('Share ready', `${label} share opened in a new tab.`);
+  };
+
+  const handleShare = async () => {
+    if (!selectedChat?.id) {
+      notify('No chat selected', 'Open a chat before sharing.', 'error');
+      return;
+    }
+
+    const shareUrl = buildChatShareUrl(selectedChat.id);
+    const shareText = buildChatShareText(selectedChat.title);
+    const targets = buildShareTargets(shareUrl, shareText);
+
+    if (navigator.share) {
+      await navigator.share({
+        title: selectedChat.title,
+        text: shareText,
+        url: shareUrl,
+      });
+      return;
+    }
+
+    openShareUrl(targets.x, 'X');
+  };
+
+  const handleShareX = () => {
+    if (!selectedChat?.id) return notify('No chat selected', 'Open a chat before sharing.', 'error');
+    const shareUrl = buildChatShareUrl(selectedChat.id);
+    const shareText = buildChatShareText(selectedChat.title);
+    openShareUrl(buildShareTargets(shareUrl, shareText).x, 'X');
+  };
+
+  const handleShareWhatsApp = () => {
+    if (!selectedChat?.id) return notify('No chat selected', 'Open a chat before sharing.', 'error');
+    const shareUrl = buildChatShareUrl(selectedChat.id);
+    const shareText = buildChatShareText(selectedChat.title);
+    openShareUrl(buildShareTargets(shareUrl, shareText).whatsapp, 'WhatsApp');
+  };
+
+  const handleShareLinkedIn = () => {
+    if (!selectedChat?.id) return notify('No chat selected', 'Open a chat before sharing.', 'error');
+    const shareUrl = buildChatShareUrl(selectedChat.id);
+    const shareText = buildChatShareText(selectedChat.title);
+    openShareUrl(buildShareTargets(shareUrl, shareText).linkedin, 'LinkedIn');
   };
 
   return (
@@ -87,6 +158,12 @@ export default function ChatPage() {
       onExportText={handleExportText}
       onExportJSON={handleExportJSON}
       onNewChat={handleNewChat}
+      onCopyLink={handleCopyLink}
+      onShare={handleShare}
+      onShareX={handleShareX}
+      onShareWhatsApp={handleShareWhatsApp}
+      onShareLinkedIn={handleShareLinkedIn}
+      onCopyPrompt={handleCopyPrompt}
     />
   );
 }

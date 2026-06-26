@@ -38,6 +38,16 @@ export default function PromptsPage() {
     toggleFavorite(promptId);
   };
 
+  const handleCopy = async (prompt) => {
+    if (!prompt?.prompt?.trim()) {
+      notify('Invalid prompt', 'Nothing to copy from this template.', 'error');
+      return;
+    }
+
+    await navigator.clipboard.writeText(prompt.prompt);
+    notify('Prompt copied', `"${prompt.title}" copied to your clipboard.`);
+  };
+
   const handleFilterChange = (newFilter) => {
     console.log('[PromptsPage] Category filter changed to:', newFilter || '(all)');
     setFilter(newFilter);
@@ -76,6 +86,7 @@ export default function PromptsPage() {
               isFavorite={favorites.includes(prompt.id)}
               onBookmark={handleBookmark}
               onUse={handleUse}
+              onCopy={handleCopy}
             />
           ))}
         </div>

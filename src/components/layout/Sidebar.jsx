@@ -37,7 +37,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
 
   const handleSelect = (id) => {
     setSelectedChatId(id);
-    navigate('/chat');
+    navigate(`/chat?chat=${encodeURIComponent(id)}`);
     onClose?.();
   };
 

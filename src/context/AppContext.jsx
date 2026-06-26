@@ -1,5 +1,5 @@
 import { createContext, useContext, useCallback, useEffect, useMemo, useState } from 'react';
-import { initialChats, createEmptyChat } from '../data/chats';
+import { useLocation } from 'react-router-dom';
 import { promptTemplates } from '../data/prompts';
 import { categories, getCategoryLabel } from '../data/categories';
 import { useLocalStorage } from '../hooks/useLocalStorage';
@@ -9,7 +9,8 @@ import { formatTime, formatRelativeTime } from '../utils/formatTime';
 const AppContext = createContext(null);
 
 export function AppProvider({ children }) {
-  const [chats, setChats] = useLocalStorage('celume-chats', []);
+  const location = useLocation();
+  const [chats, setChats] = useState([]);
   const [selectedChatId, setSelectedChatId] = useLocalStorage('celume-selected-chat', '');
   const [favorites, setFavorites] = useLocalStorage('celume-favorites', ['launch-copy']);
   const [promptUsage, setPromptUsage] = useLocalStorage('celume-prompt-usage', {});
@@ -17,9 +18,7 @@ export function AppProvider({ children }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [draftPrompt, setDraftPrompt] = useState('');
-  const [messagesByChat, setMessagesByChat] = useLocalStorage('celume-messages', () => {
-    return {};
-  });
+  const [messagesByChat, setMessagesByChat] = useState({});
   const [hydratedFromServer, setHydratedFromServer] = useState(false);
 
   const selectedChat = useMemo(
@@ -119,6 +118,7 @@ export function AppProvider({ children }) {
             updatedAt: chat.updated_at || chat.created_at || 'Just now',
             thread: [],
           });
+
           nextMessagesByChat[chat.id] = (messagesData || []).map((message) => ({
             role: message.role,
             text: message.text,
@@ -129,7 +129,12 @@ export function AppProvider({ children }) {
         if (!cancelled) {
           setChats(nextChats);
           setMessagesByChat(nextMessagesByChat);
-          setSelectedChatId(nextChats[0]?.id || '');
+          setSelectedChatId((current) => {
+            if (current && nextChats.some((chat) => chat.id === current)) {
+              return current;
+            }
+            return nextChats[0]?.id || '';
+          });
         }
       } catch (error) {
         console.error('[AppContext] Failed to hydrate chats from server:', error.message);
@@ -143,22 +148,97 @@ export function AppProvider({ children }) {
     return () => {
       cancelled = true;
     };
-  }, [setChats, setMessagesByChat, setSelectedChatId]);
+  }, []);
 
-  const updateChatMeta = useCallback((chatId, updates) => {
-    setChats((prev) =>
-      prev.map((c) => (c.id === chatId ? { ...c, ...updates } : c))
-    );
-  }, [setChats]);
+  useEffect(() => {
+    const chatIdFromUrl = new URLSearchParams(location.search).get('chat');
+    if (chatIdFromUrl) {
+      setSelectedChatId(chatIdFromUrl);
+    }
+  }, [location.search, setSelectedChatId]);
+
+  const createNewChat = useCallback(
+    async (category = 'business', title = 'New conversation') => {
+      console.log('[AppContext] Creating new chat with category "%s".', category);
+
+      const localId = `chat-${Date.now()}`;
+      const optimisticChat = {
+        id: localId,
+        backendId: null,
+        title,
+        category,
+        lastMessage: 'Start typing to begin...',
+        updatedAt: formatRelativeTime(),
+      };
+
+      setChats((prev) => [optimisticChat, ...prev]);
+      setMessagesByChat((prev) => ({ ...prev, [localId]: [] }));
+      setSelectedChatId(localId);
+
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          return optimisticChat;
+        }
+
+        const response = await fetch(apiUrl('/api/chats'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ title, category }),
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to create chat.');
+        }
+
+        const savedChat = data.chat;
+        const normalizedChat = {
+          id: savedChat.id,
+          backendId: savedChat.id,
+          title: savedChat.title,
+          category: savedChat.category,
+          lastMessage: savedChat.last_message || optimisticChat.lastMessage,
+          updatedAt: savedChat.updated_at || optimisticChat.updatedAt,
+        };
+
+        setChats((prev) =>
+          prev.map((chat) => (chat.id === localId ? normalizedChat : chat))
+        );
+        setMessagesByChat((prev) => {
+          const { [localId]: chatMessages = [], ...rest } = prev;
+          return { ...rest, [savedChat.id]: chatMessages };
+        });
+        setSelectedChatId(savedChat.id);
+
+        console.log('[AppContext] New chat persisted - id: %s, title: "%s"', savedChat.id, savedChat.title);
+        return normalizedChat;
+      } catch (error) {
+        console.error('[AppContext] createNewChat persistence failed:', error.message);
+        return optimisticChat;
+      }
+    },
+    [setChats, setMessagesByChat, setSelectedChatId]
+  );
+
+  const updateChatMeta = useCallback(
+    (chatId, updates) => {
+      setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, ...updates } : c)));
+    },
+    [setChats]
+  );
 
   const sendMessage = useCallback(
     async (text, onNotify) => {
       if (!text.trim()) {
-        console.warn('[AppContext] sendMessage called with empty text — ignoring.');
+        console.warn('[AppContext] sendMessage called with empty text - ignoring.');
         return;
       }
       if (loading) {
-        console.warn('[AppContext] sendMessage called while already loading — ignoring.');
+        console.warn('[AppContext] sendMessage called while already loading - ignoring.');
         return;
       }
 
@@ -166,16 +246,16 @@ export function AppProvider({ children }) {
       let activeChatId = selectedChatId;
 
       if (!activeChat) {
-        const freshChat = createEmptyChat('business');
-        activeChat = freshChat;
-        activeChatId = freshChat.id;
-        setChats([freshChat]);
-        setMessagesByChat({ [freshChat.id]: [] });
-        setSelectedChatId(freshChat.id);
+        activeChat = await createNewChat('business', text.trim().slice(0, 40) || 'New conversation');
+        activeChatId = activeChat.id;
       }
 
-      console.log('[AppContext] Sending message to chat "%s" (id: %s): "%s"',
-        activeChat?.title, activeChatId, text.trim().slice(0, 60));
+      console.log(
+        '[AppContext] Sending message to chat "%s" (id: %s): "%s"',
+        activeChat?.title,
+        activeChatId,
+        text.trim().slice(0, 60)
+      );
 
       const userMessage = { role: 'user', text: text.trim(), timestamp: formatTime() };
       const backendChatId = activeChat?.backendId || null;
@@ -235,7 +315,12 @@ export function AppProvider({ children }) {
         setChats((prev) =>
           prev.map((chat) =>
             chat.id === activeChatId
-              ? { ...chat, backendId: nextBackendChatId || chat.backendId, lastMessage: answer.slice(0, 80) + (answer.length > 80 ? '...' : ''), updatedAt: formatRelativeTime() }
+              ? {
+                  ...chat,
+                  backendId: nextBackendChatId || chat.backendId,
+                  lastMessage: answer.slice(0, 80) + (answer.length > 80 ? '...' : ''),
+                  updatedAt: formatRelativeTime(),
+                }
               : chat
           )
         );
@@ -249,7 +334,7 @@ export function AppProvider({ children }) {
         setLoading(false);
       }
     },
-      [loading, selectedChatId, selectedChat, setMessagesByChat, setChats, setSelectedChatId]
+    [loading, selectedChatId, selectedChat, createNewChat, setMessagesByChat, setChats]
   );
 
   const usePromptTemplate = useCallback(
@@ -260,9 +345,13 @@ export function AppProvider({ children }) {
         return '';
       }
 
-      console.log('[AppContext] Using prompt template "%s" (id: %s). Usage count: %d → %d',
-        template.title, promptId,
-        promptUsage[promptId] ?? 0, (promptUsage[promptId] ?? 0) + 1);
+      console.log(
+        '[AppContext] Using prompt template "%s" (id: %s). Usage count: %d -> %d',
+        template.title,
+        promptId,
+        promptUsage[promptId] ?? 0,
+        (promptUsage[promptId] ?? 0) + 1
+      );
 
       setPromptUsage((prev) => ({
         ...prev,
@@ -283,29 +372,33 @@ export function AppProvider({ children }) {
     [setFavorites]
   );
 
-  const createNewChat = useCallback(
-    (category = 'business') => {
-      console.log('[AppContext] Creating new chat with category "%s".', category);
-      const chat = createEmptyChat(category);
-      setChats((prev) => [chat, ...prev]);
-      setMessagesByChat((prev) => ({ ...prev, [chat.id]: [] }));
-      setSelectedChatId(chat.id);
-      console.log('[AppContext] New chat created — id: %s, title: "%s"', chat.id, chat.title);
-      return chat;
-    },
-    [setChats, setMessagesByChat, setSelectedChatId]
-  );
-
   const deleteChat = useCallback(
-    (chatId) => {
+    async (chatId) => {
       const chatToDelete = chats.find((c) => c.id === chatId);
       if (!chatToDelete) {
-        console.warn('[AppContext] deleteChat: chat id "%s" not found — nothing deleted.', chatId);
+        console.warn('[AppContext] deleteChat: chat id "%s" not found - nothing deleted.', chatId);
         return;
       }
 
-      console.log('[AppContext] Deleting chat "%s" (id: %s). Chats remaining: %d',
-        chatToDelete.title, chatId, chats.length - 1);
+      console.log('[AppContext] Deleting chat "%s" (id: %s). Chats remaining: %d', chatToDelete.title, chatId, chats.length - 1);
+
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const response = await fetch(apiUrl(`/api/chats/${chatId}`), {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to delete chat.');
+          }
+        }
+      } catch (error) {
+        console.error('[AppContext] deleteChat persistence failed:', error.message);
+        throw error;
+      }
 
       const remainingChats = chats.filter((chat) => chat.id !== chatId);
       setChats(remainingChats);
@@ -316,12 +409,11 @@ export function AppProvider({ children }) {
 
       if (selectedChatId === chatId) {
         if (remainingChats.length > 0) {
-          console.log('[AppContext] Deleted selected chat — switching to: "%s"', remainingChats[0].title);
+          console.log('[AppContext] Deleted selected chat - switching to: "%s"', remainingChats[0].title);
           setSelectedChatId(remainingChats[0].id);
         } else {
-          console.log('[AppContext] No chats left after deletion — creating a fresh chat.');
-          const newChat = createNewChat();
-          setSelectedChatId(newChat.id);
+          console.log('[AppContext] No chats left after deletion - creating a fresh chat.');
+          await createNewChat();
         }
       }
     },

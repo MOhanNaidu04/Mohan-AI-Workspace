@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import Badge from '../common/Badge';
 import { getCategoryLabel } from '../../data/categories';
 
-export default function PromptCard({ prompt, isFavorite, onBookmark, onUse }) {
+export default function PromptCard({ prompt, isFavorite, onBookmark, onUse, onCopy }) {
   return (
     <motion.div
       layout
@@ -21,14 +21,24 @@ export default function PromptCard({ prompt, isFavorite, onBookmark, onUse }) {
           <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{prompt.description}</p>
           <p className="mt-2 line-clamp-2 text-xs text-slate-400 dark:text-slate-500">{prompt.prompt}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => onBookmark(prompt.id)}
-          className="shrink-0 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold transition hover:border-accent dark:border-slate-700 dark:bg-slate-950"
-          aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-        >
-          {isFavorite ? 'Saved' : 'Save'}
-        </button>
+        <div className="flex shrink-0 flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => onBookmark(prompt.id)}
+            className="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold transition hover:border-accent dark:border-slate-700 dark:bg-slate-950"
+            aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            {isFavorite ? 'Saved' : 'Save'}
+          </button>
+          <button
+            type="button"
+            onClick={() => onCopy?.(prompt)}
+            className="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold transition hover:border-accent dark:border-slate-700 dark:bg-slate-950"
+            aria-label={`Copy prompt ${prompt.title}`}
+          >
+            Copy
+          </button>
+        </div>
       </div>
       <button
         type="button"

@@ -17,6 +17,12 @@ export default function ChatWindow({
   onExportText,
   onExportJSON,
   onNewChat,
+  onCopyLink,
+  onShare,
+  onShareX,
+  onShareWhatsApp,
+  onShareLinkedIn,
+  onCopyPrompt,
 }) {
   const scrollRef = useRef(null);
 
@@ -46,6 +52,21 @@ export default function ChatWindow({
         <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
           <Button onClick={onNewChat} className="!rounded-xl !px-3 !py-2 text-xs sm:text-sm">
             New chat
+          </Button>
+          <Button variant="secondary" onClick={onCopyLink} className="!rounded-xl !px-3 !py-2 text-xs sm:text-sm">
+            Copy link
+          </Button>
+          <Button variant="secondary" onClick={onShare} className="!rounded-xl !px-3 !py-2 text-xs sm:text-sm">
+            Share
+          </Button>
+          <Button variant="secondary" onClick={onShareX} className="!rounded-xl !px-3 !py-2 text-xs sm:text-sm">
+            X
+          </Button>
+          <Button variant="secondary" onClick={onShareWhatsApp} className="!rounded-xl !px-3 !py-2 text-xs sm:text-sm">
+            WhatsApp
+          </Button>
+          <Button variant="secondary" onClick={onShareLinkedIn} className="!rounded-xl !px-3 !py-2 text-xs sm:text-sm">
+            LinkedIn
           </Button>
           <Button variant="secondary" onClick={onExportText} className="!rounded-xl !px-3 !py-2 text-xs sm:text-sm">
             Export TXT
@@ -90,6 +111,7 @@ export default function ChatWindow({
         loading={loading}
         quickTemplates={quickTemplates}
         onSelectTemplate={onSelectTemplate}
+        onCopyPrompt={onCopyPrompt}
       />
     </motion.div>
   );

@@ -191,6 +191,56 @@ app.post('/api/chat', authMiddleware, async (req, res) => {
   }
 });
 
+app.post('/api/chats', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    const { title, category } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized. Please log in again.' });
+    }
+
+    const safeTitle = typeof title === 'string' && title.trim() ? title.trim() : 'New conversation';
+    const safeCategory = typeof category === 'string' && category.trim() ? category.trim() : 'business';
+
+    const result = await query(
+      `INSERT INTO chats (user_id, title, category_id, last_message, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+       RETURNING id, title, category_id AS category, last_message, created_at, updated_at`,
+      [userId, safeTitle, safeCategory, 'Start typing to begin...']
+    );
+
+    res.status(201).json({ chat: result.rows[0] });
+  } catch (error) {
+    console.error('[Server] POST /api/chats error:', error.message);
+    res.status(500).json({ error: 'Failed to create chat. Please try again.' });
+  }
+});
+
+app.delete('/api/chats/:chatId', authMiddleware, async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const userId = req.user?.userId;
+
+    if (!chatId) {
+      return res.status(400).json({ error: 'Invalid chat ID.' });
+    }
+
+    const ownershipCheck = await query('SELECT id FROM chats WHERE id = $1 AND user_id = $2', [chatId, userId]);
+    if (ownershipCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Chat not found.' });
+    }
+
+    await query('DELETE FROM messages WHERE chat_id = $1', [chatId]);
+    await query('DELETE FROM chats WHERE id = $1 AND user_id = $2', [chatId, userId]);
+
+    res.json({ success: true, chatId });
+  } catch (error) {
+    console.error('[Server] DELETE /api/chats/:chatId error:', error.message);
+    res.status(500).json({ error: 'Failed to delete chat. Please try again.' });
+  }
+});
+
 // Get all categories
 app.get('/api/categories', async (_req, res) => {
   try {
@@ -258,24 +308,6 @@ app.get('/api/chats/:chatId/messages', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('[Server] GET /api/chats/:chatId/messages error:', error.message);
     res.status(500).json({ error: 'Failed to fetch messages. Please try again.' });
-  }
-});
-
-app.get('/api/chats', authMiddleware, async (req, res) => {
-  try {
-    const userId = req.user?.userId;
-    const result = await query(
-      `SELECT id, title, category_id AS category, last_message, created_at, updated_at
-       FROM chats
-       WHERE user_id = $1
-       ORDER BY updated_at DESC`,
-      [userId]
-    );
-
-    res.json({ chats: result.rows });
-  } catch (error) {
-    console.error('[Server] GET /api/chats error:', error.message);
-    res.status(500).json({ error: 'Failed to fetch chats. Please try again.' });
   }
 });
 
