@@ -4,7 +4,7 @@ const variants = {
     'bg-slate-100 text-slate-800 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700',
   ghost:
     'bg-transparent text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800',
-  danger: 'bg-rose-500 text-white hover:bg-rose-400',
+  danger: 'bg-accent-500 text-white hover:bg-accent-600',
 };
 
 export default function Button({
