@@ -43,6 +43,21 @@ function toStoredUser(user) {
   };
 }
 
+function readStoredUser() {
+  try {
+    return JSON.parse(localStorage.getItem('user') || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function writeStoredUser(updater) {
+  const current = readStoredUser();
+  const next = updater(current);
+  localStorage.setItem('user', JSON.stringify(next));
+  window.dispatchEvent(new Event('storage'));
+}
+
 async function readJsonResponse(response) {
   const text = await response.text();
   return text ? JSON.parse(text) : {};
@@ -109,11 +124,6 @@ export default function ProfilePage() {
         if (!cancelled) {
           const message = getRequestErrorMessage(error);
           console.error('[ProfilePage] Error loading profile:', message);
-
-          if (!loadErrorNotifiedRef.current) {
-            loadErrorNotifiedRef.current = true;
-            notify('Profile load failed', message, 'error');
-          }
         }
       } finally {
         if (!cancelled) setLoadingProfile(false);
@@ -226,7 +236,11 @@ export default function ProfilePage() {
     reader.onload = () => {
       const avatar = String(reader.result || '');
       setProfile((current) => ({ ...current, avatar }));
-      notify('Profile picture added', 'Save your profile to store it in your account.');
+      writeStoredUser((current) => ({
+        ...current,
+        avatarUrl: avatar,
+      }));
+      notify('Profile picture added', 'Your profile picture was updated right away.');
     };
     reader.onerror = () => {
       notify('Upload failed', 'Could not read that image. Please try another one.', 'error');
@@ -236,7 +250,11 @@ export default function ProfilePage() {
 
   const handleRemoveAvatar = () => {
     setProfile((current) => ({ ...current, avatar: '' }));
-    notify('Profile picture removed', 'Save your profile to remove it from your account.');
+    writeStoredUser((current) => ({
+      ...current,
+      avatarUrl: '',
+    }));
+    notify('Profile picture removed', 'Your profile picture was removed from the account.');
   };
 
   const handleLogout = () => {
@@ -280,6 +298,7 @@ export default function ProfilePage() {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.dispatchEvent(new Event('storage'));
+      setProfile((current) => ({ ...current, avatar: '' }));
       notify('Account deleted', 'Your profile was deleted from the database. You can register again now.');
       setTimeout(() => navigate('/register', { replace: true }), 500);
     } catch (error) {
