@@ -9,6 +9,10 @@ import { registerUser, loginUser, getCurrentUser, updateUser, deleteUser } from 
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+const LLM_BASE_URL = (process.env.LLM_BASE_URL || 'http://16.112.145.206:8000/v1').replace(/\/$/, '');
+const LLM_MODEL = process.env.LLM_MODEL || '/models/gemma4-awq';
+const LLM_TEMPERATURE = Number(process.env.LLM_TEMPERATURE || 0.3);
+const LLM_MAX_COMPLETION_TOKENS = Number(process.env.LLM_MAX_COMPLETION_TOKENS || 256);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const distDir = path.resolve(__dirname, 'dist');
@@ -32,13 +36,23 @@ app.use((req, _res, next) => {
   next();
 });
 
-const replies = {
-  marketing: 'Use customer outcomes, clear value, and a strong CTA for marketing copy.',
-  sales: 'Keep it concise, benefits-led, and reference the customer pain point quickly.',
-  hr: 'Build structure around role, culture, and evaluation criteria for HR content.',
-  coding: 'Explain the issue clearly, propose steps, and reference the code context.',
-  business: 'Focus on impact, growth metrics, and a measurable next action.',
-};
+function buildSystemPrompt(category) {
+  const categoryHints = {
+    marketing: 'Use customer outcomes, clear value, and a strong CTA for marketing copy.',
+    sales: 'Keep it concise, benefits-led, and reference the customer pain point quickly.',
+    hr: 'Build structure around role, culture, and evaluation criteria for HR content.',
+    coding: 'Explain the issue clearly, propose steps, and reference the code context.',
+    business: 'Focus on impact, growth metrics, and a measurable next action.',
+  };
+
+  const hint = categoryHints[category] || categoryHints.business;
+
+  return [
+    'You are Celume AI, a helpful assistant for business, marketing, HR, sales, and coding tasks.',
+    `Category guidance: ${hint}`,
+    'Answer clearly, directly, and keep the response useful and concise unless the user asks for more detail.',
+  ].join(' ');
+}
 
 // ── Authentication Endpoints ───────────────────────────────────────────────
 
@@ -95,19 +109,46 @@ app.post('/api/chat', authMiddleware, async (req, res) => {
       console.warn('[Server] POST /api/chat — missing or invalid "category" field. userId:', userId);
       return res.status(400).json({ error: 'category is required and must be a string.' });
     }
-    if (!replies[category]) {
-      console.warn('[Server] POST /api/chat — unknown category "%s". userId: %s', category, userId);
-      return res.status(400).json({
-        error: `Unknown category "${category}". Valid categories: ${Object.keys(replies).join(', ')}.`,
-      });
-    }
-
     console.log('[Server] POST /api/chat — userId: %s, category: %s, prompt: "%s"',
       userId, category, prompt.trim().slice(0, 60));
 
-    const baseResponse = replies[category];
+    const llmResponse = await fetch(`${LLM_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(process.env.LLM_API_KEY ? { Authorization: `Bearer ${process.env.LLM_API_KEY}` } : {}),
+      },
+      body: JSON.stringify({
+        model: LLM_MODEL,
+        temperature: LLM_TEMPERATURE,
+        max_completion_tokens: LLM_MAX_COMPLETION_TOKENS,
+        messages: [
+          { role: 'system', content: buildSystemPrompt(category) },
+          { role: 'user', content: prompt.trim() },
+        ],
+      }),
+    });
+
+    const llmData = await llmResponse.json().catch(() => ({}));
+    if (!llmResponse.ok) {
+      console.error('[Server] LLM request failed:', llmData);
+      return res.status(502).json({
+        error: llmData.error?.message || llmData.error || 'Failed to get a response from the language model.',
+      });
+    }
+
+    const answer =
+      llmData?.choices?.[0]?.message?.content?.trim() ||
+      llmData?.choices?.[0]?.text?.trim() ||
+      '';
+
+    if (!answer) {
+      console.error('[Server] LLM returned an empty response:', llmData);
+      return res.status(502).json({ error: 'The language model returned an empty response.' });
+    }
+
     const response = {
-      answer: `${baseResponse} Here is a clean response for your prompt: ${prompt}`,
+      answer,
       category,
       createdAt: new Date().toISOString(),
     };
@@ -127,9 +168,7 @@ app.post('/api/chat', authMiddleware, async (req, res) => {
     response.chatId = chatResult.rows[0].id;
 
     console.log('[Server] Chat saved to DB — chatId: %s', response.chatId);
-
-    // Simulate a small processing delay
-    setTimeout(() => res.json(response), 700);
+    res.json(response);
   } catch (error) {
     console.error('[Server] POST /api/chat error:', error.message);
     res.status(500).json({ error: 'An internal server error occurred. Please try again.' });

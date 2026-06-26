@@ -3,7 +3,7 @@ import { initialChats, createEmptyChat } from '../data/chats';
 import { promptTemplates } from '../data/prompts';
 import { categories, getCategoryLabel } from '../data/categories';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { simulateAIResponse } from '../utils/simulateAI';
+import { apiUrl } from '../utils/api';
 import { formatTime, formatRelativeTime } from '../utils/formatTime';
 
 const AppContext = createContext(null);
@@ -117,8 +117,32 @@ export function AppProvider({ children }) {
       setLoading(true);
 
       try {
-        console.log('[AppContext] Simulating AI response for category "%s"...', selectedChat?.category);
-        const answer = await simulateAIResponse(text.trim(), selectedChat.category);
+        console.log('[AppContext] Sending prompt to backend LLM for category "%s"...', selectedChat?.category);
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('You are not signed in. Please log in again.');
+        }
+
+        const response = await fetch(apiUrl('/api/chat'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            prompt: text.trim(),
+            category: selectedChat.category,
+          }),
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(data.error || 'The backend AI request failed. Please try again.');
+        }
+
+        const answer = data.answer;
         const assistantMessage = { role: 'assistant', text: answer, timestamp: formatTime() };
 
         setMessagesByChat((prev) => ({
@@ -135,7 +159,7 @@ export function AppProvider({ children }) {
         onNotify?.('Response ready', 'AI replied to your message.');
       } catch (err) {
         console.error('[AppContext] AI simulation threw an error:', err);
-        onNotify?.('Something went wrong', 'The AI could not generate a response. Please try again.', 'error');
+        onNotify?.('Something went wrong', err.message || 'The AI could not generate a response. Please try again.', 'error');
       } finally {
         setLoading(false);
       }
