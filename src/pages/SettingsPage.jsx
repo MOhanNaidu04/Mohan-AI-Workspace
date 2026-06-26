@@ -9,14 +9,12 @@ import Button from '../components/common/Button';
 const accentColors = {
   sky: 'bg-sky-500',
   violet: 'bg-violet-500',
-  emerald: 'bg-emerald-500',
   rose: 'bg-rose-500',
 };
 
 const accentRings = {
   sky: 'ring-sky-400',
   violet: 'ring-violet-400',
-  emerald: 'ring-emerald-400',
   rose: 'ring-rose-400',
 };
 
@@ -124,7 +122,7 @@ export default function SettingsPage() {
           <div className="rounded-2xl bg-slate-100 p-5 dark:bg-slate-900">
             <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Accent color</p>
             <div className="mt-3 flex gap-2">
-              {['sky', 'violet', 'emerald', 'rose'].map((color) => (
+              {['sky', 'violet', 'rose'].map((color) => (
                 <button
                   key={color}
                   onClick={() => handleAccentChange(color)}
