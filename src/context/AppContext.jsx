@@ -411,10 +411,8 @@ export function AppProvider({ children }) {
         if (!response.ok) {
           throw new Error(data.error || 'Failed to delete chat.');
         }
-
         if (remainingChats.length === 0) {
-          const freshChat = await createNewChat();
-          setSelectedChatId(freshChat.id);
+          setSelectedChatId('');
         }
       } catch (error) {
         console.error('[AppContext] deleteChat persistence failed:', error.message);
